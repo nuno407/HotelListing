@@ -26,9 +26,9 @@ namespace HotelListing.Repository
             _db.Remove(entity);
         }
 
-        public async void DeleteRange(IEnumerable<T> entities)
+        public void DeleteRange(IEnumerable<T> entities)
         {
-            await _db.RemoveRangeAsync(entities);
+            _db.RemoveRange(entities);
         }
 
         public async Task<T> Get(Expression<Func<T, bool>> expression = null, List<string> includes = null)
@@ -49,7 +49,7 @@ namespace HotelListing.Repository
                 }
             }
 
-            return await _db.AsNoTracking().FirstOrDefaultAsync();
+            return await query.AsNoTracking().FirstOrDefaultAsync();
         }
 
         public async Task<IList<T>> GetAll(Expression<Func<T, bool>> expression = null, Func<IQueryable<T>, IOrderedQueryable<T>> orderBy = null, List<string> includes = null)
@@ -75,7 +75,7 @@ namespace HotelListing.Repository
                 query = orderBy(query);
             }
 
-            return await _db.AsNoTracking().ToListAsync();
+            return await query.AsNoTracking().ToListAsync();
         }
 
         public async Task Insert(T entity)
