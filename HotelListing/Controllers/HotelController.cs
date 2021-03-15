@@ -45,8 +45,7 @@ namespace HotelListing.Controllers
             }
         }
 
-        [Authorize]
-        [HttpGet("{id:int}")]
+        [HttpGet("{id:int}", Name = nameof(GetHotel))]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> GetHotel(int id)
@@ -61,6 +60,96 @@ namespace HotelListing.Controllers
             {
                 _logger.LogError(ex, $"Ups.... {nameof(GetHotel)}");
                 return StatusCode(500, "Something went wrong!");
+            }
+        }
+
+        //[Authorize(Roles = "Administrator")]
+        [HttpPost]
+        [ProducesResponseType(StatusCodes.Status201Created)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public async Task<IActionResult> CreateHotel([FromBody] CreateHotelDTO hotelDTO)
+        {
+            _logger.LogInformation("Creating new Hotel!");
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+            try
+            {
+                var hotel = _mapper.Map<Hotel>(hotelDTO);
+                await _unitOfWork.Hotels.Insert(hotel);
+                await _unitOfWork.Save();
+                var result = _mapper.Map<HotelDTO>(hotel);
+                return CreatedAtRoute(nameof(GetHotel), new { id = hotel.Id}, result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Ups.... {nameof(CreateHotel)}");
+                return Problem("Something went wrong!", statusCode: 500);
+            }
+        }
+
+        //[Authorize]
+        [HttpPut("{id:int}")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public async Task<IActionResult> UpdateHotel(int id, [FromBody] UpdateHotelDTO hotelDTO)
+        {
+            _logger.LogInformation("Updating Hotel!");
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+            try
+            {
+                var hotel = await _unitOfWork.Hotels.Get(q => q.Id == id);
+                if (hotel == null)
+                {
+                    _logger.LogError($"Hotel not found {nameof(UpdateHotel)}");
+                    return NotFound();
+                }
+
+                _mapper.Map(hotelDTO, hotel);
+                _unitOfWork.Hotels.Update(hotel);
+                await _unitOfWork.Save();
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Ups.... {nameof(UpdateHotel)}");
+                return Problem("Something went wrong!", statusCode: 500);
+            }
+        }
+
+        //[Authorize(Roles = "Administrator")]
+        [HttpDelete("{id:int}")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public async Task<IActionResult> DeleteHotel(int id)
+        {
+            _logger.LogInformation("Deleting Hotel!");
+            try
+            {
+                var hotel = await _unitOfWork.Hotels.Get(q => q.Id == id);
+                if (hotel == null)
+                {
+                    _logger.LogError("Hotel not found");
+                    return NotFound();
+                }
+
+                await _unitOfWork.Hotels.Delete(id);
+                await _unitOfWork.Save();
+                return Ok();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Ups.... {nameof(DeleteHotel)}");
+                return Problem("Something went wrong!", statusCode: 500);
             }
         }
     }
