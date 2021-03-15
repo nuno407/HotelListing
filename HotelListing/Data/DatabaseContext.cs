@@ -2,11 +2,13 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using HotelListing.Configurations.Entities;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
 namespace HotelListing.Data
 {
-    public class DatabaseContext : DbContext
+    public class DatabaseContext : IdentityDbContext<ApiUser>
     {
         public DatabaseContext(DbContextOptions options): base(options)
         {
@@ -15,19 +17,17 @@ namespace HotelListing.Data
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            // Loads identity tables
+            base.OnModelCreating(modelBuilder);
+
+            // Adding some Roles
+            modelBuilder.ApplyConfiguration(new RoleConfiguration());
+
             // Adding some contries
-            modelBuilder.Entity<Country>().HasData(
-                new Country { Id = 1, Name = "Portugal", ShortName="PT" },
-                new Country { Id = 2, Name = "Spain", ShortName = "ES" },
-                new Country { Id = 3, Name = "Italy", ShortName = "IT" }
-            );
+            modelBuilder.ApplyConfiguration(new CountryConfiguration());
 
             // Adding some Hotels 
-            modelBuilder.Entity<Hotel>().HasData(
-                new Hotel { Id = 1, Name = "Pine Cliffs", Address = "Albufeira", CountryId = 1, Rating = 5 },
-                new Hotel { Id = 2, Name = "Kilimanjaro", Address = "Sierra Nevada", CountryId = 2, Rating = 3 },
-                new Hotel { Id = 3, Name = "Milan HolidayIn", Address = "Milan", CountryId = 3, Rating = 4.69 }
-            );
+            modelBuilder.ApplyConfiguration(new HotelConfiguration());
         }
 
         public DbSet<Country> Countries { get; set; }
