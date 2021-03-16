@@ -41,7 +41,7 @@ namespace HotelListing.Services
             return new JwtSecurityToken(
                 issuer: jwtSettings.GetSection("Issuer").Value,
                 claims: claims,
-                expires: expire, 
+                expires: expire,
                 signingCredentials: signingCredentials
             );
         }

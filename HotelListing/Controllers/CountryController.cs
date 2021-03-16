@@ -30,19 +30,11 @@ namespace HotelListing.Controllers
         [HttpGet]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<IActionResult> GetCountries()
+        public async Task<IActionResult> GetCountries([FromQuery] RequestParams requestParams)
         {
-            try
-            {
-                var countries = await _unitOfWork.Countries.GetAll();
-                var result = _mapper.Map<List<CountryDTO>>(countries);
-                return Ok(result);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, $"Ups.... {nameof(GetCountries)}");
-                return StatusCode(500, "Something went wrong!");
-            }
+            var countries = await _unitOfWork.Countries.GetPagedList(requestParams);
+            var result = _mapper.Map<List<CountryDTO>>(countries);
+            return Ok(result);
         }
 
         [HttpGet("{id:int}", Name = nameof(GetCountry))]
@@ -50,17 +42,9 @@ namespace HotelListing.Controllers
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> GetCountry(int id)
         {
-            try
-            {
-                var country = await _unitOfWork.Countries.Get(q => q.Id == id, new List<string> { nameof(Country.Hotels) });
-                var result = _mapper.Map<CountryDTO>(country);
-                return Ok(result);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, $"Ups.... {nameof(GetCountry)}");
-                return StatusCode(500, "Something went wrong!");
-            }
+            var country = await _unitOfWork.Countries.Get(q => q.Id == id, new List<string> { nameof(Country.Hotels) });
+            var result = _mapper.Map<CountryDTO>(country);
+            return Ok(result);
         }
 
         //[Authorize(Roles = "Administrator")]
@@ -75,19 +59,11 @@ namespace HotelListing.Controllers
             {
                 return BadRequest(ModelState);
             }
-            try
-            {
-                var country = _mapper.Map<Country>(countryDTO);
-                await _unitOfWork.Countries.Insert(country);
-                await _unitOfWork.Save();
-                var result = _mapper.Map<CountryDTO>(country);
-                return CreatedAtRoute(nameof(countryDTO), new { id = country.Id }, result);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, $"Ups.... {nameof(CreateCountry)}");
-                return Problem("Something went wrong!", statusCode: 500);
-            }
+            var country = _mapper.Map<Country>(countryDTO);
+            await _unitOfWork.Countries.Insert(country);
+            await _unitOfWork.Save();
+            var result = _mapper.Map<CountryDTO>(country);
+            return CreatedAtRoute(nameof(countryDTO), new { id = country.Id }, result);
         }
 
         //[Authorize]
@@ -103,25 +79,18 @@ namespace HotelListing.Controllers
             {
                 return BadRequest(ModelState);
             }
-            try
-            {
-                var country = await _unitOfWork.Countries.Get(q => q.Id == id);
-                if (country == null)
-                {
-                    _logger.LogError($"country not found {nameof(UpdateCountry)}");
-                    return NotFound();
-                }
 
-                _mapper.Map(countryDTO, country);
-                _unitOfWork.Countries.Update(country);
-                await _unitOfWork.Save();
-                return NoContent();
-            }
-            catch (Exception ex)
+            var country = await _unitOfWork.Countries.Get(q => q.Id == id);
+            if (country == null)
             {
-                _logger.LogError(ex, $"Ups.... {nameof(UpdateCountry)}");
-                return Problem("Something went wrong!", statusCode: 500);
+                _logger.LogError($"country not found {nameof(UpdateCountry)}");
+                return NotFound();
             }
+
+            _mapper.Map(countryDTO, country);
+            _unitOfWork.Countries.Update(country);
+            await _unitOfWork.Save();
+            return NoContent();
         }
 
         //[Authorize(Roles = "Administrator")]
@@ -133,24 +102,16 @@ namespace HotelListing.Controllers
         public async Task<IActionResult> DeleteCountry(int id)
         {
             _logger.LogInformation("Deleting Country!");
-            try
+            var country = await _unitOfWork.Countries.Get(q => q.Id == id);
+            if (country == null)
             {
-                var country = await _unitOfWork.Countries.Get(q => q.Id == id);
-                if (country == null)
-                {
-                    _logger.LogError("Country not found");
-                    return NotFound();
-                }
+                _logger.LogError("Country not found");
+                return NotFound();
+            }
 
-                await _unitOfWork.Countries.Delete(id);
-                await _unitOfWork.Save();
-                return Ok();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, $"Ups.... {nameof(DeleteCountry)}");
-                return Problem("Something went wrong!", statusCode: 500);
-            }
+            await _unitOfWork.Countries.Delete(id);
+            await _unitOfWork.Save();
+            return Ok();
         }
     }
 }

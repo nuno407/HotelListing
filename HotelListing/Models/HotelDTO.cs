@@ -11,7 +11,7 @@ namespace HotelListing.Models
         [StringLength(maximumLength: 255, ErrorMessage = "Hotel Address is to long")]
         public string Address { get; set; }
         [Required]
-        [Range(1,5)]
+        [Range(1, 5)]
         public double Rating { get; set; }
         [Required]
         public int CountryId { get; set; }
@@ -19,7 +19,7 @@ namespace HotelListing.Models
 
     public class UpdateHotelDTO : CreateHotelDTO
     {
-    
+
     }
 
     public class HotelDTO : CreateHotelDTO

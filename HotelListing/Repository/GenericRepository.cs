@@ -1,11 +1,13 @@
 ﻿using HotelListing.Data;
 using HotelListing.IRepository;
+using HotelListing.Models;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
+using X.PagedList;
 
 namespace HotelListing.Repository
 {
@@ -43,7 +45,7 @@ namespace HotelListing.Repository
             // Enables lazy loading of referenced entities
             if (includes != null)
             {
-                foreach(var includeProp in includes)
+                foreach (var includeProp in includes)
                 {
                     query = query.Include(includeProp);
                 }
@@ -78,6 +80,22 @@ namespace HotelListing.Repository
             return await query.AsNoTracking().ToListAsync();
         }
 
+        public async Task<IPagedList<T>> GetPagedList(RequestParams requestParams, List<string> includes = null)
+        {
+            IQueryable<T> query = _db;
+
+            // Enables lazy loading of referenced entities
+            if (includes != null)
+            {
+                foreach (var includeProp in includes)
+                {
+                    query = query.Include(includeProp);
+                }
+            }
+
+            return await query.AsNoTracking().ToPagedListAsync(requestParams.PageNumber, requestParams.PageSize);
+        }
+
         public async Task Insert(T entity)
         {
             await _db.AddAsync(entity);
@@ -88,7 +106,7 @@ namespace HotelListing.Repository
             await _db.AddRangeAsync(entities);
         }
 
-        public  void Update(T entity)
+        public void Update(T entity)
         {
             _db.Attach(entity);
             _context.Entry(entity).State = EntityState.Modified;

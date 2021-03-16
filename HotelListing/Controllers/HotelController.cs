@@ -30,19 +30,11 @@ namespace HotelListing.Controllers
         [HttpGet]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<IActionResult> GetHotels()
+        public async Task<IActionResult> GetHotels([FromQuery] RequestParams requestParams)
         {
-            try
-            {
-                var hotels = await _unitOfWork.Hotels.GetAll();
-                var result = _mapper.Map<List<HotelDTO>>(hotels);
-                return Ok(result);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, $"Ups.... {nameof(GetHotels)}");
-                return StatusCode(500, "Something went wrong!");
-            }
+            var hotels = await _unitOfWork.Hotels.GetPagedList(requestParams);
+            var result = _mapper.Map<List<HotelDTO>>(hotels);
+            return Ok(result);
         }
 
         [HttpGet("{id:int}", Name = nameof(GetHotel))]
@@ -50,17 +42,9 @@ namespace HotelListing.Controllers
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> GetHotel(int id)
         {
-            try
-            {
-                var hotel = await _unitOfWork.Hotels.Get(q => q.Id == id, new List<string> { nameof(Hotel.Country) });
-                var result = _mapper.Map<HotelDTO>(hotel);
-                return Ok(result);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, $"Ups.... {nameof(GetHotel)}");
-                return StatusCode(500, "Something went wrong!");
-            }
+            var hotel = await _unitOfWork.Hotels.Get(q => q.Id == id, new List<string> { nameof(Hotel.Country) });
+            var result = _mapper.Map<HotelDTO>(hotel);
+            return Ok(result);
         }
 
         //[Authorize(Roles = "Administrator")]
@@ -75,19 +59,11 @@ namespace HotelListing.Controllers
             {
                 return BadRequest(ModelState);
             }
-            try
-            {
-                var hotel = _mapper.Map<Hotel>(hotelDTO);
-                await _unitOfWork.Hotels.Insert(hotel);
-                await _unitOfWork.Save();
-                var result = _mapper.Map<HotelDTO>(hotel);
-                return CreatedAtRoute(nameof(GetHotel), new { id = hotel.Id}, result);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, $"Ups.... {nameof(CreateHotel)}");
-                return Problem("Something went wrong!", statusCode: 500);
-            }
+            var hotel = _mapper.Map<Hotel>(hotelDTO);
+            await _unitOfWork.Hotels.Insert(hotel);
+            await _unitOfWork.Save();
+            var result = _mapper.Map<HotelDTO>(hotel);
+            return CreatedAtRoute(nameof(GetHotel), new { id = hotel.Id }, result);
         }
 
         //[Authorize]
@@ -103,25 +79,18 @@ namespace HotelListing.Controllers
             {
                 return BadRequest(ModelState);
             }
-            try
-            {
-                var hotel = await _unitOfWork.Hotels.Get(q => q.Id == id);
-                if (hotel == null)
-                {
-                    _logger.LogError($"Hotel not found {nameof(UpdateHotel)}");
-                    return NotFound();
-                }
 
-                _mapper.Map(hotelDTO, hotel);
-                _unitOfWork.Hotels.Update(hotel);
-                await _unitOfWork.Save();
-                return NoContent();
-            }
-            catch (Exception ex)
+            var hotel = await _unitOfWork.Hotels.Get(q => q.Id == id);
+            if (hotel == null)
             {
-                _logger.LogError(ex, $"Ups.... {nameof(UpdateHotel)}");
-                return Problem("Something went wrong!", statusCode: 500);
+                _logger.LogError($"Hotel not found {nameof(UpdateHotel)}");
+                return NotFound();
             }
+
+            _mapper.Map(hotelDTO, hotel);
+            _unitOfWork.Hotels.Update(hotel);
+            await _unitOfWork.Save();
+            return NoContent();
         }
 
         //[Authorize(Roles = "Administrator")]
@@ -133,24 +102,16 @@ namespace HotelListing.Controllers
         public async Task<IActionResult> DeleteHotel(int id)
         {
             _logger.LogInformation("Deleting Hotel!");
-            try
+            var hotel = await _unitOfWork.Hotels.Get(q => q.Id == id);
+            if (hotel == null)
             {
-                var hotel = await _unitOfWork.Hotels.Get(q => q.Id == id);
-                if (hotel == null)
-                {
-                    _logger.LogError("Hotel not found");
-                    return NotFound();
-                }
+                _logger.LogError("Hotel not found");
+                return NotFound();
+            }
 
-                await _unitOfWork.Hotels.Delete(id);
-                await _unitOfWork.Save();
-                return Ok();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, $"Ups.... {nameof(DeleteHotel)}");
-                return Problem("Something went wrong!", statusCode: 500);
-            }
+            await _unitOfWork.Hotels.Delete(id);
+            await _unitOfWork.Save();
+            return Ok();
         }
     }
 }
